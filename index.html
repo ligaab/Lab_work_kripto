@@ -3,67 +3,136 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kriptovalūtu analīze</title>
+<title>Bitcoin tirgus analīze</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   body {
     margin: 0;
-    font-family: "Arial", sans-serif;
-    background-color: #121212;
-    color: white;
+    font-family: "Segoe UI", sans-serif;
     text-align: center;
+    color: white;
+    background: linear-gradient(180deg, #121212, #1e1e1e);
+    transition: background 1s ease, color 1s ease;
   }
 
   h1 {
     color: #f1c40f;
-    margin-top: 20px;
+    margin-top: 25px;
+    transition: color 1s ease;
   }
 
   .buttons {
-    margin: 20px;
+    margin: 25px;
   }
 
   button {
     background-color: #2c2c2c;
     border: none;
     color: white;
-    padding: 10px 20px;
+    padding: 12px 22px;
     margin: 5px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all 0.5s ease;
     font-size: 15px;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
   }
 
   button:hover {
-    background-color: #555;
+    transform: scale(1.05);
   }
 
   button.active {
     background-color: #f1c40f;
     color: black;
+    box-shadow: 0 0 15px #f1c40f;
   }
 
   canvas {
     background-color: #1e1e1e;
-    border-radius: 10px;
-    margin-top: 20px;
+    border-radius: 12px;
+    margin-top: 25px;
     max-width: 900px;
     margin-left: auto;
     margin-right: auto;
     display: block;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
   }
 
   footer {
-    color: #888;
-    font-size: 12px;
-    margin-top: 10px;
+    color: #aaa;
+    font-size: 13px;
+    margin-top: 15px;
+    transition: color 1s ease;
+  }
+
+  /* Dinamiskās klases */
+  body.positive {
+    background: linear-gradient(180deg, #003300, #004d00, #0a0a0a);
+  }
+
+  body.positive h1 {
+    color: #00ff88;
+    text-shadow: 0 0 15px #00ff88;
+  }
+
+  body.positive footer {
+    color: #7cffc7;
+  }
+
+  body.positive button {
+    background-color: #004d00;
+  }
+
+  body.positive button.active {
+    background-color: #00ff88;
+    box-shadow: 0 0 20px #00ff88;
+  }
+
+  body.negative {
+    background: linear-gradient(180deg, #330000, #660000, #0a0a0a);
+  }
+
+  body.negative h1 {
+    color: #ff4c4c;
+    text-shadow: 0 0 20px #ff0000;
+  }
+
+  body.negative footer {
+    color: #ff9999;
+  }
+
+  body.negative button {
+    background-color: #660000;
+  }
+
+  body.negative button.active {
+    background-color: #ff4c4c;
+    color: black;
+    box-shadow: 0 0 20px #ff4c4c;
+  }
+
+  body.neutral {
+    background: linear-gradient(180deg, #1a1a1a, #222, #111);
+  }
+
+  body.neutral h1 {
+    color: #f1c40f;
+  }
+
+  body.neutral button {
+    background-color: #2c2c2c;
+  }
+
+  body.neutral button.active {
+    background-color: #f1c40f;
+    color: black;
   }
 </style>
 </head>
-<body>
+<body class="neutral">
   <h1>Bitcoin cenu izmaiņas – pēdējie 3 mēneši</h1>
-  <p>(Pozitīva, negatīva vai neitrāla ietekme)</p>
+  <p>(Pozitīva, negatīva vai neitrāla ietekme uz tirgu)</p>
 
   <div class="buttons">
     <button id="positive">Pozitīva ietekme</button>
@@ -99,7 +168,7 @@
       });
     }
 
-    // === Izveido gradientu ===
+    // === Gradienta izveide ===
     function createGradient(colorTop, colorBottom) {
       const gradient = ctx.createLinearGradient(0, 0, 0, 400);
       gradient.addColorStop(0, colorTop);
@@ -111,23 +180,21 @@
     function drawChart(filter = "neutral") {
       if (chart) chart.destroy();
 
-      const fullLine = prices.map((p) => p);
-      const filteredLine = prices.map((p, i) => {
-        return changes[i] === filter ? p : null; // tikai atbilstošās daļas
-      });
+      const baseLine = prices.map(p => p);
+      const filtered = prices.map((p, i) => (changes[i] === filter ? p : null));
 
       let gradient, labelText;
       switch (filter) {
         case "positive":
-          gradient = createGradient("rgba(0,255,100,0.9)", "rgba(0,100,255,0.3)");
+          gradient = createGradient("rgba(0,255,120,0.9)", "rgba(0,100,255,0.3)");
           labelText = "Pozitīva ietekme – cenu kāpums";
           break;
         case "negative":
-          gradient = createGradient("rgba(255,80,80,0.9)", "rgba(255,0,0,0.3)");
+          gradient = createGradient("rgba(255,50,50,0.9)", "rgba(255,0,0,0.3)");
           labelText = "Negatīva ietekme – cenu kritums";
           break;
         default:
-          gradient = createGradient("rgba(180,180,180,0.9)", "rgba(80,80,80,0.3)");
+          gradient = createGradient("rgba(200,200,200,0.9)", "rgba(100,100,100,0.3)");
           labelText = "Neitrāla ietekme – stabils periods";
       }
 
@@ -137,23 +204,23 @@
           labels,
           datasets: [
             {
-              label: "Kopējā cena",
-              data: fullLine,
-              borderColor: "rgba(255,255,255,0.1)",
+              label: "Cenu līkne (fons)",
+              data: baseLine,
+              borderColor: "rgba(255,255,255,0.05)",
               borderWidth: 2,
-              tension: 0.25,
+              tension: 0.3,
               fill: false,
-              pointRadius: 0,
+              pointRadius: 0
             },
             {
               label: labelText,
-              data: filteredLine,
+              data: filtered,
               borderColor: gradient,
               backgroundColor: gradient,
               borderWidth: 3,
-              tension: 0.25,
+              tension: 0.3,
               fill: true,
-              pointRadius: 0,
+              pointRadius: 0
             }
           ]
         },
@@ -178,6 +245,9 @@
           }
         }
       });
+
+      // Maina lapas dizainu pēc izvēles
+      document.body.className = filter;
     }
 
     // === Pogu funkcionalitāte ===
@@ -201,7 +271,7 @@
       drawChart("negative");
     });
 
-    // === Ielādē sākotnējos datus ===
+    // === Sākuma ielāde ===
     (async () => {
       await getCryptoData();
       setActive("neutral");
