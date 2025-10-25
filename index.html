@@ -1,190 +1,128 @@
 <!DOCTYPE html>
 <html lang="lv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kriptovalūtu dinamiska ietekme</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background-color: #121212;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 {
-            color: #f1c40f;
-        }
-
-        .controls {
-            margin: 20px;
-        }
-
-        button {
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button.active {
-            background-color: #f1c40f;
-            color: black;
-        }
-
-        canvas {
-            background-color: #1e1e1e;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-
-        select {
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitcoin – Golden & Death Cross</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        background: #121212;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        color: #f1c40f;
+    }
+    canvas {
+        background: #1e1e1e;
+        border-radius: 10px;
+        margin-top: 20px;
+        max-width: 900px;
+    }
+</style>
 </head>
 <body>
-    <h1>Kriptovalūtu cenu izmaiņas (90 dienas)</h1>
+<h1>Bitcoin – Golden & Death Cross vizualizācija</h1>
+<canvas id="chart" width="900" height="400"></canvas>
 
-    <div class="controls">
-        <label for="cryptoSelect">Izvēlies kriptovalūtu:</label>
-        <select id="cryptoSelect">
-            <option value="bitcoin">Bitcoin (BTC)</option>
-            <option value="ethereum">Ethereum (ETH)</option>
-            <option value="dogecoin">Dogecoin (DOGE)</option>
-        </select>
-        <br>
-        <button id="positive">Pozitīva ietekme</button>
-        <button id="neutral">Neitrāla ietekme</button>
-        <button id="negative">Negatīva ietekme</button>
-    </div>
+<script>
+const ctx = document.getElementById('chart').getContext('2d');
 
-    <canvas id="cryptoChart" width="900" height="400"></canvas>
+// Demo dati (var aizstāt ar reāliem no CoinGecko vai CSV)
+const labels = Array.from({length: 100}, (_, i) => `Diena ${i+1}`);
+const price = labels.map((_, i) => 8000 + Math.sin(i/5) * 1000 + i*5); // galvenā līkne
+const ma50 = price.map((p, i) => 7900 + Math.sin(i/8)*500 + i*4);
+const ma200 = price.map((p, i) => 8100 + Math.cos(i/15)*300 + i*2);
 
-    <script>
-        const ctx = document.getElementById('cryptoChart').getContext('2d');
-        let chart;
-        let allData = null;
-        let currentFilter = 'all';
+// Izveidojam gradientus
+const gradientPrice = ctx.createLinearGradient(0, 0, 0, 400);
+gradientPrice.addColorStop(0, "rgba(0,255,100,0.8)");
+gradientPrice.addColorStop(1, "rgba(0,100,255,0.8)");
 
-        async function getCryptoData(crypto) {
-            const res = await fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=90`);
-            const data = await res.json();
-            const prices = data.prices.map(p => p[1]);
-            const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
+const gradientMA50 = ctx.createLinearGradient(0, 0, 900, 0);
+gradientMA50.addColorStop(0, "#f39c12");
+gradientMA50.addColorStop(1, "#e67e22");
 
-            // Aprēķinām dienas izmaiņas (kāpums/kritums/neitrāls)
-            const changes = prices.map((p, i) => {
-                if (i === 0) return 0;
-                const diff = p - prices[i - 1];
-                if (diff > 10) return 1; // pozitīvs
-                if (diff < -10) return -1; // negatīvs
-                return 0; // neitrāls
-            });
+const gradientMA200 = ctx.createLinearGradient(0, 0, 900, 0);
+gradientMA200.addColorStop(0, "#3498db");
+gradientMA200.addColorStop(1, "#2ecc71");
 
-            return { labels, prices, changes };
-        }
+// Atrodam “cross” punktus
+let crosses = [];
+for (let i = 1; i < ma50.length; i++) {
+    const prevDiff = ma50[i-1] - ma200[i-1];
+    const diff = ma50[i] - ma200[i];
+    if (prevDiff < 0 && diff > 0) crosses.push({x: labels[i], y: ma50[i], type: 'golden'});
+    if (prevDiff > 0 && diff < 0) crosses.push({x: labels[i], y: ma50[i], type: 'death'});
+}
 
-        function createChart(filteredType = 'all') {
-            if (chart) chart.destroy();
-
-            const { labels, prices, changes } = allData;
-
-            const datasets = [];
-
-            // Funkcija, kas veido daļas ar konkrētu ietekmi
-            function makeDataset(type, color) {
-                const data = prices.map((p, i) => {
-                    if (type === 'positive' && changes[i] > 0) return p;
-                    if (type === 'negative' && changes[i] < 0) return p;
-                    if (type === 'neutral' && changes[i] === 0) return p;
-                    if (type === 'all') return p;
-                    return null;
-                });
-
-                return {
-                    label: type === 'all' ? 'Cena' :
-                        type === 'positive' ? 'Pozitīvs kāpums' :
-                        type === 'negative' ? 'Kritums' : 'Stabils',
-                    data,
-                    borderColor: color,
-                    backgroundColor: color + '33',
-                    tension: 0.2,
-                    spanGaps: true,
-                    borderWidth: 2
-                };
+// Uzzīmējam grafiku
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            {
+                label: 'Bitcoin cena',
+                data: price,
+                borderColor: gradientPrice,
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false
+            },
+            {
+                label: 'MA 50 (īsa tendence)',
+                data: ma50,
+                borderColor: gradientMA50,
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false
+            },
+            {
+                label: 'MA 200 (ilgtermiņa tendence)',
+                data: ma200,
+                borderColor: gradientMA200,
+                borderWidth: 2,
+                tension: 0.2,
+                fill: false
+            },
+            {
+                label: 'Krustošanās punkti',
+                data: crosses.map(p => ({x: p.x, y: p.y})),
+                pointBackgroundColor: crosses.map(p => p.type === 'golden' ? '#00ff99' : '#ff3333'),
+                pointBorderColor: '#fff',
+                pointRadius: 6,
+                showLine: false
             }
-
-            // Krāsojam tikai izvēlēto tipu
-            if (filteredType === 'positive') datasets.push(makeDataset('positive', '#2ecc71'));
-            else if (filteredType === 'negative') datasets.push(makeDataset('negative', '#e74c3c'));
-            else if (filteredType === 'neutral') datasets.push(makeDataset('neutral', '#95a5a6'));
-            else {
-                datasets.push(makeDataset('positive', '#2ecc71'));
-                datasets.push(makeDataset('neutral', '#95a5a6'));
-                datasets.push(makeDataset('negative', '#e74c3c'));
-            }
-
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets },
-                options: {
-                    scales: {
-                        x: { ticks: { color: '#ccc' }, grid: { color: '#333' } },
-                        y: { ticks: { color: '#ccc' }, grid: { color: '#333' } }
-                    },
-                    plugins: { legend: { labels: { color: '#fff' } } },
-                    animation: { duration: 600 }
+        ]
+    },
+    options: {
+        plugins: {
+            legend: { labels: { color: '#fff' } },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        const point = crosses.find(c => c.x === context.label);
+                        if (point) {
+                            return point.type === 'golden'
+                                ? 'Golden Cross – bullish reversal'
+                                : 'Death Cross – bearish reversal';
+                        }
+                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} USD`;
+                    }
                 }
-            });
+            }
+        },
+        scales: {
+            x: { ticks: { color: '#ccc' }, grid: { color: '#333' } },
+            y: { ticks: { color: '#ccc' }, grid: { color: '#333' } }
         }
-
-        async function loadCrypto(crypto) {
-            allData = await getCryptoData(crypto);
-            createChart(currentFilter);
-        }
-
-        // Pogu funkcionalitāte
-        function setActive(buttonId) {
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.getElementById(buttonId).classList.add('active');
-        }
-
-        document.getElementById('positive').addEventListener('click', () => {
-            currentFilter = 'positive';
-            setActive('positive');
-            createChart('positive');
-        });
-
-        document.getElementById('neutral').addEventListener('click', () => {
-            currentFilter = 'neutral';
-            setActive('neutral');
-            createChart('neutral');
-        });
-
-        document.getElementById('negative').addEventListener('click', () => {
-            currentFilter = 'negative';
-            setActive('negative');
-            createChart('negative');
-        });
-
-        document.getElementById('cryptoSelect').addEventListener('change', (e) => {
-            loadCrypto(e.target.value);
-        });
-
-        // Sākotnējā ielāde
-        loadCrypto('bitcoin');
-    </script>
+    }
+});
+</script>
 </body>
 </html>
