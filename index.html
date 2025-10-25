@@ -1,1 +1,121 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kriptovalūtu dati - Bitcoin</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
 
+        h1 {
+            color: #f1c40f;
+        }
+
+        .button-container {
+            margin: 20px;
+        }
+
+        button {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        canvas {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bitcoin dati pēdējo 3 mēnešu laikā</h1>
+    <p>(Cenas USD, avots: CoinGecko)</p>
+
+    <div class="button-container">
+        <button id="positive">Pozitīva ietekme</button>
+        <button id="neutral">Neitrāla ietekme</button>
+        <button id="negative">Negatīva ietekme</button>
+    </div>
+
+    <canvas id="cryptoChart" width="800" height="400"></canvas>
+
+    <script>
+        const ctx = document.getElementById('cryptoChart').getContext('2d');
+        let chart;
+
+        // Funkcija, lai iegūtu datus no CoinGecko
+        async function getCryptoData() {
+            const response = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90");
+            const data = await response.json();
+
+            const prices = data.prices.map(p => p[1]);
+            const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
+
+            return { labels, prices };
+        }
+
+        // Funkcija grafika izveidei
+        async function createChart(color, label) {
+            const data = await getCryptoData();
+
+            if (chart) chart.destroy(); // izdzēš iepriekšējo grafiku
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: label,
+                        data: data.prices,
+                        borderColor: color,
+                        backgroundColor: color + '33', // caurspīdīga aizpilde
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            ticks: { color: '#ccc' },
+                            grid: { color: '#333' }
+                        },
+                        y: {
+                            ticks: { color: '#ccc' },
+                            grid: { color: '#333' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#fff' } }
+                    }
+                }
+            });
+        }
+
+        // Pogu notikumi
+        document.getElementById('positive').addEventListener('click', () => createChart('#2ecc71', 'Pozitīva ietekme (augšupeja)'));
+        document.getElementById('neutral').addEventListener('click', () => createChart('#95a5a6', 'Neitrāla ietekme (stabils periods)'));
+        document.getElementById('negative').addEventListener('click', () => createChart('#e74c3c', 'Negatīva ietekme (kritums)'));
+
+        // Noklusēti parāda neitrālo grafiku
+        createChart('#95a5a6', 'Neitrāla ietekme (stabils periods)');
+    </script>
+</body>
+</html>
