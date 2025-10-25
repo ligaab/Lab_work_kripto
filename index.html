@@ -14,6 +14,7 @@
     background: linear-gradient(180deg, #121212, #1e1e1e);
     transition: background 1s ease, color 1s ease;
     overflow-x: hidden;
+    position: relative;
   }
 
   h1 {
@@ -58,6 +59,8 @@
     margin-right: auto;
     display: block;
     box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    z-index: 2;
+    position: relative;
   }
 
   footer {
@@ -81,15 +84,6 @@
     color: #7cffc7;
   }
 
-  body.positive button {
-    background-color: #004d00;
-  }
-
-  body.positive button.active {
-    background-color: #00ff88;
-    box-shadow: 0 0 20px #00ff88;
-  }
-
   body.negative {
     background: linear-gradient(180deg, #330000, #660000, #0a0a0a);
   }
@@ -103,23 +97,30 @@
     color: #ff9999;
   }
 
-  body.negative button {
-    background-color: #660000;
-  }
-
-  body.negative button.active {
-    background-color: #ff4c4c;
-    color: black;
-    box-shadow: 0 0 20px #ff4c4c;
-  }
-
   body.neutral {
     background: linear-gradient(180deg, #1a1a1a, #222, #111);
   }
 
+  /* 🎃 Halloween režīms */
   body.halloween {
     background: linear-gradient(180deg, #1a0000, #331100, #000);
     color: #ff9f00;
+    position: relative;
+  }
+
+  body.halloween::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://cdn.pixabay.com/photo/2016/10/02/21/11/spider-web-1718106_1280.png');
+    background-repeat: repeat;
+    background-size: 400px 400px;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
   }
 
   body.halloween h1 {
@@ -146,28 +147,28 @@
   .halloween-decoration {
     position: absolute;
     pointer-events: none;
-    opacity: 0.7;
-    z-index: 0;
+    opacity: 0.8;
+    z-index: 1;
     transition: opacity 1s ease;
   }
 
   .witch {
     top: 30px;
-    left: 20px;
+    left: 40px;
     width: 120px;
     transform: rotate(-10deg);
   }
 
   .pumpkin {
     bottom: 10px;
-    right: 40px;
+    right: 30px;
     width: 100px;
   }
 
   .web {
     top: 0;
     right: 0;
-    width: 150px;
+    width: 160px;
   }
 </style>
 </head>
@@ -308,38 +309,39 @@
       setActive("positive");
       drawChart("positive");
     });
+
     document.getElementById("neutral").addEventListener("click", () => {
       setActive("neutral");
       drawChart("neutral");
     });
+
     document.getElementById("negative").addEventListener("click", () => {
       setActive("negative");
       drawChart("negative");
     });
+
     document.getElementById("halloween").addEventListener("click", () => {
       setActive("halloween");
       document.body.className = "halloween";
       toggleHalloweenDecor(true);
-      if (chart) chart.destroy();
 
-      // Halloween krāsas grafikam
+      if (chart) chart.destroy();
       const gradient = createGradient("rgba(255,136,0,1)", "rgba(80,20,0,0.5)");
+
       chart = new Chart(ctx, {
         type: "line",
         data: {
           labels,
-          datasets: [
-            {
-              label: "Halloween tirgus – mistiski svārstības 🎃",
-              data: prices,
-              borderColor: gradient,
-              backgroundColor: gradient,
-              borderWidth: 3,
-              tension: 0.4,
-              fill: true,
-              pointRadius: 0
-            }
-          ]
+          datasets: [{
+            label: "🎃 Halloween tirgus – mistiski svārstības",
+            data: prices,
+            borderColor: gradient,
+            backgroundColor: gradient,
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointRadius: 0
+          }]
         },
         options: {
           plugins: {
