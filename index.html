@@ -1,128 +1,214 @@
 <!DOCTYPE html>
 <html lang="lv">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bitcoin – Golden & Death Cross</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kriptovalūtu analīze</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
     body {
-        background: #121212;
-        color: white;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 0;
-        padding: 20px;
+      margin: 0;
+      font-family: "Arial", sans-serif;
+      background-color: #121212;
+      color: white;
+      text-align: center;
     }
+
     h1 {
-        color: #f1c40f;
+      color: #f1c40f;
+      margin-top: 20px;
     }
+
+    .buttons {
+      margin: 20px;
+    }
+
+    button {
+      background-color: #2c2c2c;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    button.active {
+      background-color: #f1c40f;
+      color: black;
+    }
+
     canvas {
-        background: #1e1e1e;
-        border-radius: 10px;
-        margin-top: 20px;
-        max-width: 900px;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      margin-top: 20px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
     }
-</style>
+
+    footer {
+      color: #888;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-<h1>Bitcoin – Golden & Death Cross vizualizācija</h1>
-<canvas id="chart" width="900" height="400"></canvas>
+  <h1>Bitcoin analīze – pēdējie 3 mēneši</h1>
+  <p>(Pozitīva, negatīva un neitrāla ietekme uz cenu izmaiņām)</p>
 
-<script>
-const ctx = document.getElementById('chart').getContext('2d');
+  <div class="buttons">
+    <button id="positive">Pozitīva ietekme</button>
+    <button id="neutral">Neitrāla ietekme</button>
+    <button id="negative">Negatīva ietekme</button>
+  </div>
 
-// Demo dati (var aizstāt ar reāliem no CoinGecko vai CSV)
-const labels = Array.from({length: 100}, (_, i) => `Diena ${i+1}`);
-const price = labels.map((_, i) => 8000 + Math.sin(i/5) * 1000 + i*5); // galvenā līkne
-const ma50 = price.map((p, i) => 7900 + Math.sin(i/8)*500 + i*4);
-const ma200 = price.map((p, i) => 8100 + Math.cos(i/15)*300 + i*2);
+  <canvas id="cryptoChart" width="900" height="400"></canvas>
 
-// Izveidojam gradientus
-const gradientPrice = ctx.createLinearGradient(0, 0, 0, 400);
-gradientPrice.addColorStop(0, "rgba(0,255,100,0.8)");
-gradientPrice.addColorStop(1, "rgba(0,100,255,0.8)");
+  <footer>Avots: CoinGecko API</footer>
 
-const gradientMA50 = ctx.createLinearGradient(0, 0, 900, 0);
-gradientMA50.addColorStop(0, "#f39c12");
-gradientMA50.addColorStop(1, "#e67e22");
+  <script>
+    const ctx = document.getElementById('cryptoChart').getContext('2d');
+    let chart;
+    let prices = [];
+    let labels = [];
+    let changes = [];
 
-const gradientMA200 = ctx.createLinearGradient(0, 0, 900, 0);
-gradientMA200.addColorStop(0, "#3498db");
-gradientMA200.addColorStop(1, "#2ecc71");
-
-// Atrodam “cross” punktus
-let crosses = [];
-for (let i = 1; i < ma50.length; i++) {
-    const prevDiff = ma50[i-1] - ma200[i-1];
-    const diff = ma50[i] - ma200[i];
-    if (prevDiff < 0 && diff > 0) crosses.push({x: labels[i], y: ma50[i], type: 'golden'});
-    if (prevDiff > 0 && diff < 0) crosses.push({x: labels[i], y: ma50[i], type: 'death'});
-}
-
-// Uzzīmējam grafiku
-new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels,
-        datasets: [
-            {
-                label: 'Bitcoin cena',
-                data: price,
-                borderColor: gradientPrice,
-                borderWidth: 2,
-                tension: 0.2,
-                fill: false
-            },
-            {
-                label: 'MA 50 (īsa tendence)',
-                data: ma50,
-                borderColor: gradientMA50,
-                borderWidth: 2,
-                tension: 0.2,
-                fill: false
-            },
-            {
-                label: 'MA 200 (ilgtermiņa tendence)',
-                data: ma200,
-                borderColor: gradientMA200,
-                borderWidth: 2,
-                tension: 0.2,
-                fill: false
-            },
-            {
-                label: 'Krustošanās punkti',
-                data: crosses.map(p => ({x: p.x, y: p.y})),
-                pointBackgroundColor: crosses.map(p => p.type === 'golden' ? '#00ff99' : '#ff3333'),
-                pointBorderColor: '#fff',
-                pointRadius: 6,
-                showLine: false
-            }
-        ]
-    },
-    options: {
-        plugins: {
-            legend: { labels: { color: '#fff' } },
-            tooltip: {
-                callbacks: {
-                    label: (context) => {
-                        const point = crosses.find(c => c.x === context.label);
-                        if (point) {
-                            return point.type === 'golden'
-                                ? 'Golden Cross – bullish reversal'
-                                : 'Death Cross – bearish reversal';
-                        }
-                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} USD`;
-                    }
-                }
-            }
-        },
-        scales: {
-            x: { ticks: { color: '#ccc' }, grid: { color: '#333' } },
-            y: { ticks: { color: '#ccc' }, grid: { color: '#333' } }
-        }
+    async function getCryptoData() {
+      const res = await fetch(
+        "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90"
+      );
+      const data = await res.json();
+      prices = data.prices.map(p => p[1]);
+      labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
+      
+      // Aprēķinām dienas izmaiņas
+      changes = prices.map((p, i) => {
+        if (i === 0) return 0;
+        const diff = p - prices[i - 1];
+        if (diff > 10) return "positive";
+        else if (diff < -10) return "negative";
+        else return "neutral";
+      });
     }
-});
-</script>
+
+    function createGradient(color1, color2) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
+      return gradient;
+    }
+
+    function drawChart(filter = "neutral") {
+      if (chart) chart.destroy();
+
+      // Filtrē datus
+      const filteredData = prices.map((p, i) => {
+        if (filter === "all") return p;
+        return changes[i] === filter ? p : null;
+      });
+
+      // Definē krāsas atbilstoši noskaņai
+      let gradient;
+      let labelText;
+      switch (filter) {
+        case "positive":
+          gradient = createGradient("rgba(0,255,100,1)", "rgba(0,100,255,0.3)");
+          labelText = "Pozitīva ietekme – cenas kāpums";
+          break;
+        case "negative":
+          gradient = createGradient("rgba(255,80,80,1)", "rgba(255,0,0,0.3)");
+          labelText = "Negatīva ietekme – cenas kritums";
+          break;
+        case "neutral":
+          gradient = createGradient("rgba(180,180,180,1)", "rgba(80,80,80,0.3)");
+          labelText = "Neitrāla ietekme – stabils periods";
+          break;
+      }
+
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: labelText,
+              data: filteredData,
+              borderColor: gradient,
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.25,
+              fill: true,
+              backgroundColor: gradient
+            },
+            {
+              // Blāvi pelēka pamatlīnija, lai imitētu fonu (tradingview stilu)
+              label: "Fona līkne",
+              data: prices,
+              borderColor: "rgba(255,255,255,0.05)",
+              borderWidth: 2,
+              pointRadius: 0,
+              tension: 0.25,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: "white" } },
+            tooltip: {
+              callbacks: {
+                label: context => `${context.parsed.y.toFixed(2)} USD`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#ccc" },
+              grid: { color: "#333" }
+            },
+            y: {
+              ticks: { color: "#ccc" },
+              grid: { color: "#333" }
+            }
+          }
+        }
+      });
+    }
+
+    // Pogas funkcionalitāte
+    document.getElementById("positive").addEventListener("click", () => {
+      setActive("positive");
+      drawChart("positive");
+    });
+    document.getElementById("neutral").addEventListener("click", () => {
+      setActive("neutral");
+      drawChart("neutral");
+    });
+    document.getElementById("negative").addEventListener("click", () => {
+      setActive("negative");
+      drawChart("negative");
+    });
+
+    function setActive(id) {
+      document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    // Ielādē datus un sāk ar neitrālu grafiku
+    (async () => {
+      await getCryptoData();
+      setActive("neutral");
+      drawChart("neutral");
+    })();
+  </script>
 </body>
 </html>
