@@ -21,10 +21,19 @@
     color: #f1c40f;
     margin-top: 25px;
     transition: color 1s ease;
+    position: relative;
+    z-index: 2;
+  }
+
+  p {
+    position: relative;
+    z-index: 2;
   }
 
   .buttons {
     margin: 25px;
+    position: relative;
+    z-index: 2;
   }
 
   button {
@@ -38,6 +47,8 @@
     transition: all 0.5s ease;
     font-size: 15px;
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 2;
   }
 
   button:hover {
@@ -68,6 +79,8 @@
     font-size: 13px;
     margin-top: 15px;
     transition: color 1s ease;
+    position: relative;
+    z-index: 2;
   }
 
   /* Dinamiskās klases */
@@ -101,7 +114,7 @@
     background: linear-gradient(180deg, #1a1a1a, #222, #111);
   }
 
-  /* 🎃 Halloween režīms */
+  /* 🎃 Halloween režīms ar zirnekļu tīklu */
   body.halloween {
     background: linear-gradient(180deg, #1a0000, #331100, #000);
     color: #ff9f00;
@@ -115,12 +128,19 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('https://cdn.pixabay.com/photo/2016/10/02/21/11/spider-web-1718106_1280.png');
+    background-image: url('https://i.ibb.co/zbPv1R0/spiderweb-pattern.png');
     background-repeat: repeat;
-    background-size: 400px 400px;
-    opacity: 0.08;
+    background-size: 300px 300px;
+    opacity: 0.15;
+    animation: moveWeb 30s linear infinite;
     pointer-events: none;
-    z-index: 0;
+    z-index: 1;
+  }
+
+  @keyframes moveWeb {
+    0% { background-position: 0 0; }
+    50% { background-position: 50px 50px; }
+    100% { background-position: 0 0; }
   }
 
   body.halloween h1 {
@@ -148,7 +168,7 @@
     position: absolute;
     pointer-events: none;
     opacity: 0.8;
-    z-index: 1;
+    z-index: 2;
     transition: opacity 1s ease;
   }
 
@@ -170,6 +190,7 @@
     right: 0;
     width: 160px;
   }
+
 </style>
 </head>
 <body class="neutral">
@@ -368,8 +389,8 @@
 
     (async () => {
       await getCryptoData();
-      setActive("neutral");
       drawChart("neutral");
+      setActive("neutral");
     })();
   </script>
 </body>
